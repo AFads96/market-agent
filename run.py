@@ -203,7 +203,9 @@ def main():
     for s in picks:
         if sent >= alcfg["max_alerts_per_run"]:
             break
+        label = f"{s['conviction'].upper()} {'BUY' if s['direction'] == 'bullish' else 'SELL'}"
         if not state.should_send(s["symbol"], s["direction"], s["conviction"], alcfg["cooldown_hours"]):
+            log.info("TERTAHAN cooldown: %s %s (%s)", s["symbol"], label, state.why_blocked(s["symbol"]))
             continue
         msg = notifier.format_message(s, by_sym[s["symbol"]], context)
         if args.dry_run:
@@ -211,13 +213,14 @@ def main():
             ok = True
         else:
             ok = notifier.send_telegram(msg)
+        log.info("%s: %s %s", "DIKIRIM" if ok else "GAGAL KIRIM", s["symbol"], label)
         if ok:
             sent += 1
             if not args.dry_run:
                 state.record(s["symbol"], s["direction"], s["conviction"])
     if not args.dry_run:
         state.save()
-    log.info("Alert terkirim: %d", sent)
+    log.info("Alert terkirim: %d dari %d sinyal", sent, len(picks))
 
 
 if __name__ == "__main__":

@@ -177,7 +177,8 @@ def apply(signals: list[dict], by_sym: dict, cfg: dict) -> None:
         res = evaluate(s, c, cfg)
         s["confluence"] = res
         s["conviction"] = res["conviction"]
-        if before != res["conviction"]:
-            log.info("%s %s: %s -> %s (konfluensi %d/%d, utama %d/%d, berlawanan %d)", s["symbol"], s["direction"],
-                     before.upper(), res["conviction"].upper(), res["ok"], res["total"],
-                     res["key_ok"], res["key_total"], res["bad"])
+        mark = {True: "✅", False: "❌", None: "➖"}
+        detail = " ".join(f"{mark[ok]}{'⭐' if key else ''}{name}" for name, ok, _t, key in res["checks"])
+        log.info("%-12s %-7s awal %-4s -> AKHIR %-4s | %d/%d sumber, utama %d/%d, berlawanan %d | %s",
+                 s["symbol"], s["direction"], before.upper(), res["conviction"].upper(), res["ok"], res["total"],
+                 res["key_ok"], res["key_total"], res["bad"], detail)

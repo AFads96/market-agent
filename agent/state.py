@@ -24,6 +24,13 @@ class AlertState:
             return True                     # arah berbalik = informasi baru
         return RANK[conviction] > RANK.get(prev["conviction"], 0)   # naik dari low ke high
 
+    def why_blocked(self, symbol: str) -> str:
+        prev = self.data.get(symbol)
+        if not prev:
+            return ""
+        age_h = (time.time() - prev["ts"]) / 3600
+        return f"sudah dikirim {prev['conviction'].upper()} {prev['direction']} {age_h:.1f} jam lalu"
+
     def record(self, symbol: str, direction: str, conviction: str):
         self.data[symbol] = {"direction": direction, "conviction": conviction, "ts": time.time()}
 
