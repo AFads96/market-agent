@@ -146,6 +146,9 @@ def evaluate(sm: dict, direction: str) -> tuple[bool | None, str]:
     parts = []
 
     wb, ws = sm.get("whale_buy_usd", 0), sm.get("whale_sell_usd", 0)
+    if "whale_count" in sm and not sm["whale_count"]:
+        win = f" dlm {sm['trades_window_min']:.0f} mnt" if sm.get("trades_window_min") else ""
+        parts.append(f"tidak ada transaksi whale ≥{_usd(sm.get('whale_threshold_usd'))}{win}")
     if sm.get("whale_count"):
         share = wb / (wb + ws) if wb + ws else 0.5
         if share >= 0.6:

@@ -45,6 +45,19 @@ Di Telegram, chart dikirim lebih dulu sebagai foto dengan ringkasan singkat. Ana
 sebagai **balasan** di bawah foto tersebut. Jika chart gagal dibuat, analisis teks tetap terkirim.
 Matikan dengan `charts: enabled: false` di `config.yaml`. Saat `--dry-run`, chart disimpan ke folder `charts/`.
 
+### Rencana trading: Entry, SL, TP1/TP2/TP3
+Setiap sinyal disertai rencana trading yang dihitung otomatis (juga digambar di chart):
+
+| Bagian | Cara menghitung |
+|---|---|
+| **Entry** | Harga sekarang, plus **area entry ideal** saat pullback (BUY) / pantulan (SELL) ke level terdekat dalam 1,5x ATR |
+| **SL** | Di balik support (BUY) / resisten (SELL) terdekat yang berjarak **1x–3x ATR**. Tidak terlalu dekat (kena noise), tidak terlalu jauh (risiko besar) |
+| **TP1 / TP2 / TP3** | Level **Fibonacci** (retracement & extension dari swing 90 hari) dan level struktur (MA20/50/200, high/low 20 hari). TP1 = level pertama dengan **R:R ≥ 1**, TP2 **≥ 2**, TP3 **≥ 3**. Jika tidak ada level yang cukup jauh, dipakai proyeksi kelipatan risiko |
+| **Ukuran posisi** | Saran ukuran posisi jika risiko maksimal 1% modal per trade |
+
+Target yang tidak realistis (> 5R, turun > 60%, atau naik > 200%) dibuang otomatis.
+Saran manajemen: ambil sebagian profit di TP1, lalu geser SL ke harga entry (break-even).
+
 ### Label sinyal & aturan konfluensi
 Setiap sinyal diperiksa terhadap beberapa **sumber independen**. Tiap sumber diberi ✅ (mendukung),
 ❌ (berlawanan), atau ➖ (netral / tidak ada data).

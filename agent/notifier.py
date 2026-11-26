@@ -49,6 +49,8 @@ def format_message(sig: dict, cand: dict, context: dict | None = None) -> str:
         f"🎯 <b>Level:</b> {e(sig.get('key_levels'))}",
         f"⚠️ <b>Risiko:</b> {e(sig.get('risk'))}",
     ]
+    from .trade_plan import format_html
+    lines += format_html(sig.get("plan"), lambda x: html.escape(str(x)))
     fg = (context or {}).get("crypto_fear_greed")
     if a.is_crypto and fg:
         lines.append(f"🌡️ Fear &amp; Greed: {fg['value']} ({e(fg['label'])})")
@@ -103,4 +105,13 @@ def photo_caption(sig: dict, cand: dict) -> str:
     cf = sig.get("confluence") or {}
     return (f"{icon} <b>{action}</b> · <b>{html.escape(a.symbol)}</b> · {_fmt_price(t.get('price'), a.market)} "
             f"({(t.get('change_pct') or 0):+.2f}%)\n🧭 Konfluensi {cf.get('ok', 0)}/{cf.get('total', 0)} · "
-            f"⭐ utama {cf.get('key_ok', 0)}/{cf.get('key_total', 0)}\n⬇️ Analisis lengkap di bawah")
+            f"⭐ utama {cf.get('key_ok', 0)}/{cf.get('key_total', 0)}{_plan_line(sig.get('plan'))}"
+            f"\n⬇️ Analisis lengkap di bawah")
+
+
+def _plan_line(plan: dict | None) -> str:
+    if not plan:
+        return ""
+    from .trade_plan import _f
+    tps = " · ".join(f"TP{i} {_f(tp['price'])}" for i, tp in enumerate(plan["tps"], 1))
+    return f"\n🛑 SL {_f(plan['sl'])} · {tps}"

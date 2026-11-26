@@ -100,6 +100,31 @@ def snapshot(df: pd.DataFrame, breakout_lookback: int = 20) -> dict | None:
     }
 
 
+def key_levels(s: dict, direction: str) -> dict:
+    """Resisten & support terdekat (MA20/50/200, high/low 20 hari) dan level invalidasi.
+    BUY : invalidasi SELALU di bawah harga. SELL: invalidasi SELALU di atas harga."""
+    p = s.get("price")
+    if not p:
+        return {}
+    cands = [(s.get("sma20"), "MA20"), (s.get("sma50"), "MA50"), (s.get("sma200"), "MA200"),
+             (s.get("resistance"), "high 20 hari"), (s.get("support"), "low 20 hari")]
+    cands = [(v, n) for v, n in cands if v and not (isinstance(v, float) and math.isnan(v))]
+    above = sorted((c for c in cands if c[0] > p * 1.002), key=lambda c: c[0])
+    below = sorted((c for c in cands if c[0] < p * 0.998), key=lambda c: -c[0])
+    atr = (s.get("atr_pct") or 5) / 100
+    # SL di balik support/resisten terdekat yang berjarak 1x-3x ATR. Lebih dekat = mudah kena noise,
+    # lebih jauh = risiko terlalu besar -> pakai batas 3x ATR.
+    if direction == "bullish":
+        near_lim, far_lim = p * (1 - atr), p * (1 - 3 * atr)
+        sup = [v for v, n in below if far_lim <= v <= near_lim]
+        invalid = sup[0] * 0.995 if sup else max(far_lim, min(near_lim, p * (1 - 1.5 * atr)))
+    else:
+        near_lim, far_lim = p * (1 + atr), p * (1 + 3 * atr)
+        res = [v for v, n in above if near_lim <= v <= far_lim]
+        invalid = res[0] * 1.005 if res else min(far_lim, max(near_lim, p * (1 + 1.5 * atr)))
+    return {"above": above[:2], "below": below[:2], "invalid": _p(invalid)}
+
+
 def confirmation(s: dict, direction: str) -> dict:
     """Cek apakah RSI, MACD, dan Moving Average mengonfirmasi arah (bullish/bearish).
     Mengembalikan {"rsi": (ok, teks), "macd": (ok, teks), "ma": (ok, teks), "count": n}."""

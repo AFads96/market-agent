@@ -19,10 +19,12 @@ POSITIVE = [
     (["kontrak baru", "proyek baru", "ekspansi", "kerja sama", "kemitraan", "partnership", "new contract",
       "expansion", "peluncuran", "launches"], 3, "contract"),
     # rekomendasi analis
-    (["upgrade", "target harga naik", "rekomendasi beli", "buy rating", "outperform", "price target raised"], 3, "upgrade"),
+    (["upgraded to buy", "upgrade to buy", "rating upgrade", "target harga naik", "rekomendasi beli", "buy rating",
+      "outperform", "price target raised", "menaikkan target harga"], 3, "upgrade"),
     # crypto
     (["listing", "listed on", "will list", "etf approved", "etf approval", "inflows", "adoption", "mainnet",
-      "integration", "token burn", "buyback program"], 3, "crypto_catalyst"),
+      "integration", "token burn", "buyback program", "protocol upgrade", "network upgrade", "mainnet upgrade",
+      "hard fork", "staking launch"], 3, "crypto_catalyst"),
     # umum
     (["naik", "menguat", "melonjak", "meroket", "rally", "surge", "soars", "jumps", "bullish", "all-time high",
       "rekor tertinggi", "breakout"], 1, "general"),
@@ -33,7 +35,8 @@ NEGATIVE = [
     (["gugatan", "suspensi", "disuspensi", "pkpu", "pailit", "bangkrut", "delisting", "sanksi", "investigasi",
       "penipuan", "korupsi", "lawsuit", "sec charges", "probe", "fraud", "bankruptcy", "delist", "default"], 3, "legal"),
     (["hack", "hacked", "exploit", "rug pull", "token unlock", "unlock", "outflows", "depeg", "drained", "scam"], 3, "crypto_risk"),
-    (["downgrade", "target harga turun", "rekomendasi jual", "sell rating", "underperform", "price target cut"], 3, "downgrade"),
+    (["downgraded to sell", "rating downgrade", "target harga turun", "rekomendasi jual", "sell rating",
+      "underperform", "price target cut", "menurunkan target harga", "downgrade"], 3, "downgrade"),
     (["turun", "melemah", "anjlok", "ambles", "jatuh", "tumbang", "plunge", "drops", "slump", "bearish", "crash",
       "breakdown"], 1, "general"),
 ]
@@ -45,7 +48,7 @@ POTENTIAL = {
     ("bullish", "corporate"): "Aksi korporasi (akuisisi/buyback/dividen) biasanya menopang harga dan menarik minat investor.",
     ("bullish", "contract"): "Kontrak/ekspansi baru menambah prospek pendapatan; pasar bisa mulai memperhitungkannya.",
     ("bullish", "upgrade"): "Kenaikan rekomendasi analis sering diikuti aliran dana institusi.",
-    ("bullish", "crypto_catalyst"): "Katalis seperti listing/ETF/adopsi bisa memicu lonjakan volume dan harga, namun sering diikuti aksi ambil untung.",
+    ("bullish", "crypto_catalyst"): "Katalis on-chain/listing/ETF/upgrade jaringan bisa memicu lonjakan volume dan harga, namun sering diikuti aksi ambil untung setelah berita tersebar.",
     ("bullish", "general"): "Sentimen positif mendukung kelanjutan kenaikan selama volume tetap tinggi.",
     ("bearish", "earnings"): "Kinerja melemah berisiko memicu aksi jual lanjutan dan penurunan target harga.",
     ("bearish", "legal"): "Masalah hukum/regulasi bisa menekan harga dalam waktu lama dan memicu suspensi.",
@@ -65,7 +68,8 @@ def _has(text: str, kw: str) -> bool:
     if p is None:
         words = [re.escape(w) for w in kw.split()]
         body = r"\W+(?:\w+\W+){0,2}?".join(words)
-        p = _PAT[kw] = re.compile(rf"(?<![a-z0-9]){body}(?![a-z0-9])")
+        # bentuk jamak/turunan bahasa Inggris ikut cocok: integration -> integrations, listing -> listings
+        p = _PAT[kw] = re.compile(rf"(?<![a-z0-9]){body}(?:s|es)?(?![a-z0-9])")
     return p.search(text) is not None
 
 
@@ -155,10 +159,16 @@ def analyze_one(c: dict, dcfg: dict) -> dict | None:
     macd = "MACD positif" if (t.get("macd_hist") or 0) > 0 else "MACD negatif"
     technical = f"Tren {t.get('trend')}, RSI {t.get('rsi14')}, {macd}" + (
         f", volume {t['volume_ratio']}x rata-rata" if t.get("volume_ratio") else "")
+    kl = technicals.key_levels(t, direction)
+    lv = lambda pairs, none="-": ", lalu ".join(f"{_fmt(v)} ({n})" for v, n in pairs) or none
     if direction == "bullish":
-        levels = f"Support {_fmt(t.get('support'))} / Resisten {_fmt(t.get('resistance'))} / invalid < MA50 {_fmt(t.get('sma50'))}"
+        levels = (f"Resisten terdekat {lv(kl.get('above', []), 'tidak ada (breakout ke area harga baru)')} · "
+                  f"Support {lv(kl.get('below', []))} · "
+                  f"Invalid jika tutup < {_fmt(kl.get('invalid'))}")
     else:
-        levels = f"Resisten {_fmt(t.get('resistance'))} / Support {_fmt(t.get('support'))} / invalid > MA50 {_fmt(t.get('sma50'))}"
+        levels = (f"Support terdekat {lv(kl.get('below', []), 'tidak ada (breakdown ke area harga baru)')} · "
+                  f"Resisten {lv(kl.get('above', []))} · "
+                  f"Invalid jika tutup > {_fmt(kl.get('invalid'))}")
 
     risks = []
     if direction == "bullish" and (t.get("rsi14") or 0) >= 72:
@@ -170,6 +180,20 @@ def analyze_one(c: dict, dcfg: dict) -> dict | None:
     fr = t.get("funding")
     if fr is not None and direction == "bullish" and fr >= dcfg["funding_hot"]:
         risks.append("funding tinggi, long terlalu ramai")
+    chg, p = t.get("change_pct") or 0, t.get("price") or 0
+    big = 10 if a.is_crypto else 5
+    if direction == "bullish" and chg >= big:
+        risks.append(f"sudah naik {chg:+.1f}% hari ini, rawan pullback; hindari mengejar, tunggu harga kembali ke support")
+    if direction == "bearish" and chg <= -big:
+        risks.append(f"sudah turun {chg:+.1f}% hari ini, rawan pantulan; hindari mengejar")
+    if direction == "bullish" and t.get("sma50") and p < t["sma50"]:
+        risks.append(f"masih downtrend (harga di bawah MA50 {_fmt(t['sma50'])}); sinyal melawan tren besar")
+    if direction == "bearish" and t.get("sma50") and p > t["sma50"]:
+        risks.append(f"masih uptrend (harga di atas MA50 {_fmt(t['sma50'])}); sinyal melawan tren besar")
+    near = technicals.key_levels(t, direction).get("above" if direction == "bullish" else "below", [])
+    if near and p and abs(near[0][0] / p - 1) <= 0.03:
+        risks.append(f"{'resisten' if direction == 'bullish' else 'support'} {near[0][1]} {_fmt(near[0][0])} "
+                     f"sangat dekat ({(near[0][0] / p - 1) * 100:+.1f}%)")
     if not risks:
         risks.append("Sinyal berbasis aturan; konfirmasi manual berita dan grafik sebelum bertindak")
 

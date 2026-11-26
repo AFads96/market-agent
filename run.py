@@ -12,7 +12,7 @@ import sys
 
 import yaml
 
-from agent import analyst, confluence, news, notifier, smart_money, technicals, universe, x_sentiment
+from agent import analyst, confluence, news, notifier, smart_money, technicals, trade_plan, universe, x_sentiment
 from agent.state import AlertState
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -177,7 +177,8 @@ def make_chart(s: dict, cand: dict, cfg: dict) -> bytes | None:
         if a.is_crypto and t.get("funding") is not None:
             sub += f" · funding {t['funding'] * 100:+.3f}%"
         return chart.render(cand["df"], f"{a.symbol} · {label}", sub,
-                            {"support": t.get("support"), "resistance": t.get("resistance")},
+                            {"support": t.get("support"), "resistance": t.get("resistance"),
+                             "plan": s.get("plan")},
                             bars=cfg.get("charts", {}).get("bars", 120))
     except Exception as e:
         log.warning("Gagal membuat chart %s: %s", s["symbol"], e)
@@ -230,6 +231,11 @@ def main():
             log.info("TERTAHAN cooldown: %s %s (%s)", s["symbol"], label, state.why_blocked(s["symbol"]))
             continue
         cand = by_sym[s["symbol"]]
+        try:
+            s["plan"] = trade_plan.build(cand.get("df"), cand["tech"], s["direction"])
+        except Exception as e:
+            log.warning("Rencana trading %s gagal: %s", s["symbol"], e)
+            s["plan"] = None
         msg = notifier.format_message(s, cand, context)
         png = make_chart(s, cand, cfg)
         if args.dry_run:

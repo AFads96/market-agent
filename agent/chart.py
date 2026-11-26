@@ -46,7 +46,7 @@ def render(df: pd.DataFrame, title: str, subtitle: str, levels: dict | None = No
         for s in ax.spines.values():
             s.set_color(GRID)
         ax.yaxis.tick_right()
-        ax.set_xlim(-1, len(d) + 6)
+        ax.set_xlim(-1, len(d) + 20)
 
     # --- candlestick ---
     o, h, l, cl = d["Open"].values, d["High"].values, d["Low"].values, d["Close"].values
@@ -57,17 +57,37 @@ def render(df: pd.DataFrame, title: str, subtitle: str, levels: dict | None = No
         s = d[f"MA{n}"]
         if s.notna().any():
             axp.plot(x, s.values, color=colr, linewidth=1.3, label=f"MA{n} {_fmt_price(s.iloc[-1])}")
-    if levels:
-        for name, val, colr in (("Resisten", levels.get("resistance"), "#ef9a9a"),
-                                ("Support", levels.get("support"), "#80cbc4")):
-            if val:
-                axp.axhline(val, color=colr, linestyle="--", linewidth=0.9, alpha=0.8)
-                axp.text(len(d) + 5.5, val, f"{name} {_fmt_price(val)}", color=colr, fontsize=8,
-                         va="bottom", ha="right")
     last = cl[-1]
-    axp.axhline(last, color=col[-1], linewidth=0.6, alpha=0.6)
-    axp.annotate(f" {_fmt_price(last)} ", xy=(len(d) - 1, last), xytext=(len(d) + 1, last), color="white",
-                 fontsize=9, va="center", bbox=dict(boxstyle="round,pad=0.2", fc=col[-1], ec="none"))
+    lines = [("Harga", last, col[-1], "-", 0.6)]
+    if levels:
+        plan = levels.get("plan")
+        if plan:   # rencana trading lebih penting daripada support/resisten mentah
+            lines.append(("SL", plan["sl"], "#ff5252", "-", 1.3))
+            for i, tp in enumerate(plan["tps"], 1):
+                lines.append((f"TP{i}", tp["price"], "#00e676", "-", 1.1))
+            lines.append(("Entry ideal", plan["entry_zone"][0], "#90caf9", ":", 1.0))
+        else:
+            lines += [("Resisten", levels.get("resistance"), "#ef9a9a", "--", 0.9),
+                      ("Support", levels.get("support"), "#80cbc4", "--", 0.9)]
+    lines = [ln for ln in lines if ln[1]]
+    for name, val, colr, ls, lw in lines:
+        axp.axhline(val, color=colr, linestyle=ls, linewidth=lw, alpha=0.85)
+    # Label di sisi kanan, disusun dari bawah ke atas agar tidak saling menimpa.
+    y0, y1 = axp.get_ylim()
+    gap = (y1 - y0) * 0.045
+    placed = []
+    for name, val, colr, ls, lw in sorted(lines, key=lambda ln: ln[1]):
+        ty = max(val, placed[-1] + gap) if placed else val
+        placed.append(ty)
+        if name == "Harga":
+            axp.text(len(d) + 19.5, ty, f" {_fmt_price(val)} ", color="white", fontsize=9, va="center", ha="right",
+                     fontweight="bold", bbox=dict(boxstyle="round,pad=0.25", fc=colr, ec="none"))
+        else:
+            axp.text(len(d) + 19.5, ty, f"{name} {_fmt_price(val)}", color=colr, fontsize=8, va="center", ha="right",
+                     fontweight="bold" if name.startswith(("SL", "TP")) else "normal",
+                     bbox=dict(boxstyle="round,pad=0.15", fc=PANEL, ec="none", alpha=0.85))
+    if placed and placed[-1] > y1:
+        axp.set_ylim(y0, placed[-1] + gap)
     axp.legend(loc="upper left", fontsize=8, facecolor=PANEL, edgecolor=GRID, labelcolor=TEXT)
     axp.set_title(title, color="white", fontsize=14, loc="left", fontweight="bold", pad=22)
     axp.text(0, 1.015, subtitle, transform=axp.transAxes, color=TEXT, fontsize=9)

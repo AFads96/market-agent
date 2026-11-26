@@ -93,7 +93,7 @@ confluence:
   # HIGH = minimal sekian sumber ✅ (crypto perpetual punya 7 sumber, saham & spot punya 6).
   high_min_sources: {stock: 5, crypto_perp: 6, crypto_spot: 5}
   high_max_contradictions: 1
-  veto_sources: [Funding, Smart money]               # jika ❌ (posisi terlalu ramai), sinyal dibatalkan
+  veto_sources: [Funding, Smart money]  # jika ❌ (funding terlalu ramai / whale berlawanan), sinyal dibatalkan
 
 smart_money:
   enabled: true
