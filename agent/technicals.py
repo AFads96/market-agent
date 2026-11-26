@@ -111,11 +111,17 @@ def confirmation(s: dict, direction: str) -> dict:
     if r is None:
         out["rsi"] = (False, "RSI n/a")
     elif bull:
-        ok = (50 <= r <= 75) or (rp is not None and rp < 30 <= r)
-        out["rsi"] = (ok, f"RSI {r}" + (" (momentum naik)" if ok else " (belum kuat)" if r < 50 else " (overbought)"))
+        early = rp is not None and 40 <= r < 50 and r > rp + 1
+        ok = (50 <= r <= 75) or (rp is not None and rp < 30 <= r) or early
+        label = " (momentum mulai pulih, dini)" if early else " (momentum naik)" if ok else \
+            " (belum kuat)" if r < 50 else " (overbought)"
+        out["rsi"] = (ok, f"RSI {r}{label}")
     else:
-        ok = (25 <= r <= 50) or (rp is not None and rp > 70 >= r)
-        out["rsi"] = (ok, f"RSI {r}" + (" (momentum turun)" if ok else " (masih kuat)" if r > 50 else " (oversold)"))
+        early = rp is not None and 50 < r <= 60 and r < rp - 1
+        ok = (25 <= r <= 50) or (rp is not None and rp > 70 >= r) or early
+        label = " (momentum mulai melemah, dini)" if early else " (momentum turun)" if ok else \
+            " (masih kuat)" if r > 50 else " (oversold)"
+        out["rsi"] = (ok, f"RSI {r}{label}")
 
     if h is None:
         out["macd"] = (False, "MACD n/a")

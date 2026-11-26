@@ -12,7 +12,7 @@ import sys
 
 import yaml
 
-from agent import analyst, news, notifier, technicals, universe, x_sentiment
+from agent import analyst, confluence, news, notifier, smart_money, technicals, universe, x_sentiment
 from agent.state import AlertState
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -128,6 +128,17 @@ def find_candidates(cfg: dict) -> tuple[list[dict], dict]:
                     c["tech"].update(oi)
         oisnap.save()
 
+    # Smart money / whale: arus volume dari grafik (semua), plus whale trades & top trader (crypto)
+    smcfg = cfg["smart_money"]
+    for c in cands:
+        a = c["asset"]
+        sm = smart_money.volume_flow(prices[a.yf_symbol]) if a.yf_symbol in prices else {}
+        if a.is_crypto and ex and smcfg["enabled"]:
+            sm.update(smart_money.exchange_flow(ex, a, smcfg))
+        c["smart"] = sm
+    log.info("Data smart money: %d kandidat (whale trades: %d)", sum(bool(c["smart"]) for c in cands),
+             sum("whale_count" in c["smart"] for c in cands))
+
     # Sentimen X untuk kandidat crypto
     x_sentiment.enrich([c for c in cands if c["asset"].is_crypto], cfg["x_sentiment"])
 
@@ -149,32 +160,6 @@ def find_candidates(cfg: dict) -> tuple[list[dict], dict]:
         if ex:
             context["crypto_exchange"] = ex.name
     return cands, context
-
-
-def apply_confirmation(signals: list[dict], by_sym: dict, cfg: dict) -> None:
-    """Konfirmasi indikator dengan aturan pasti. HIGH hanya jika semua syarat terpenuhi."""
-    acfg, dcfg = cfg["analyst"], cfg["derivatives"]
-    for s in signals:
-        c = by_sym.get(s.get("symbol"))
-        if not c or s.get("direction") not in ("bullish", "bearish"):
-            continue
-        t = c["tech"]
-        conf = technicals.confirmation(t, s["direction"])
-        need = acfg.get("min_confirmations_for_high", 3)
-        if c["asset"].is_crypto and dcfg["enabled"]:
-            d = technicals.derivatives_check(
-                {"funding": t.get("funding"), "oi_change_24h_pct": t.get("oi_change_24h_pct")},
-                t.get("change_pct"), s["direction"], dcfg)
-            if d is not None:
-                conf["deriv"] = d
-                conf["count"] += int(d[0])
-                if acfg.get("require_derivatives_for_high_crypto", True):
-                    need += 1
-        conf["total"] = 4 if "deriv" in conf else 3
-        s["confirmation"] = conf
-        if s.get("conviction") == "high" and conf["count"] < need:
-            log.info("%s diturunkan HIGH -> LOW (konfirmasi %d/%d)", s["symbol"], conf["count"], conf["total"])
-            s["conviction"] = "low"
 
 
 def main():
@@ -205,7 +190,7 @@ def main():
     acfg, alcfg = cfg["analyst"], cfg["alerts"]
     signals = analyst.analyze(cands, acfg, cfg["derivatives"], context)
     by_sym = {c["asset"].symbol: c for c in cands}
-    apply_confirmation(signals, by_sym, cfg)
+    confluence.apply(signals, by_sym, cfg)
 
     allowed = {"high", "low"} if acfg["send_low_conviction"] else {"high"}
     picks = [s for s in signals if s.get("conviction") in allowed and s.get("symbol") in by_sym

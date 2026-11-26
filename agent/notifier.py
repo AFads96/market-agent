@@ -29,8 +29,9 @@ def format_message(sig: dict, cand: dict, context: dict | None = None) -> str:
     icon = ("🟢🟢" if high else "🟢") if bull else ("🔴🔴" if high else "🔴")
     mkt = {"idx": "Saham IDX", "us": "Saham AS", "crypto": "Crypto"}[a.market]
     vr = f" | Vol {t['volume_ratio']}x" if t.get("volume_ratio") else ""
-    conf = sig.get("confirmation") or {}
-    checks = "\n".join(f"   {'✅' if conf[k][0] else '❌'} {e(conf[k][1])}" for k in ("rsi", "macd", "ma", "deriv") if k in conf)
+    cf = sig.get("confluence") or {}
+    icon_of = {True: "✅", False: "❌", None: "➖"}
+    checks = "\n".join(f"   {icon_of[ok]} {'⭐' if key else ''}<b>{e(name)}:</b> {e(txt)}" for name, ok, txt, key in cf.get("checks", []))
     lines = [
         f"{icon} <b>{action}</b>",
         f"<b>{e(a.symbol)}</b> ({mkt}) · {_fmt_price(t.get('price'), a.market)} ({(t.get('change_pct') or 0):+.2f}%)",
@@ -40,14 +41,9 @@ def format_message(sig: dict, cand: dict, context: dict | None = None) -> str:
         f"🚀 <b>Potensi:</b> {e(sig.get('news_potential'))}",
         f"📊 <b>Teknikal:</b> {e(sig.get('technical'))}",
     ]
-    if a.is_crypto and a.has_perp and sig.get("derivatives"):
-        lines.append(f"⛓️ <b>Derivatif:</b> {e(sig['derivatives'])}")
-    if a.is_crypto and cand.get("x") and sig.get("social_sentiment"):
-        x = cand.get("x") or {}
-        ratio = f" (mention {x['mention_ratio']}x normal)" if x.get("mention_ratio") else ""
-        lines.append(f"🐦 <b>Sentimen X:</b> {e(sig['social_sentiment'])}{ratio}")
     if checks:
-        lines.append(f"🧭 <b>Konfirmasi ({conf.get('count', 0)}/{conf.get('total', 3)}):</b>\n{checks}")
+        lines.append(f"🧭 <b>Konfluensi: {cf['ok']}/{cf['total']} sumber · ⭐ utama {cf.get('key_ok', 0)}/{cf.get('key_total', 0)}"
+                     f"{' · ' + str(cf['bad']) + ' berlawanan' if cf.get('bad') else ''}</b>\n{checks}")
     lines += [
         f"<i>{t.get('trend')}{vr}</i>",
         f"🎯 <b>Level:</b> {e(sig.get('key_levels'))}",

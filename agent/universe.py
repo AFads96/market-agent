@@ -23,6 +23,7 @@ class Asset:
     aliases: list[str] = field(default_factory=list)
     base: str = ""          # crypto: simbol dasar, mis. BTC
     has_perp: bool = False  # crypto: punya kontrak perpetual (ada OI & funding)
+    vol_24h: float = 0.0    # crypto: volume 24 jam (USD)
 
     @property
     def is_crypto(self) -> bool:

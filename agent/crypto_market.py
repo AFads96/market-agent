@@ -88,7 +88,7 @@ class CryptoExchange:
             nm = names.get(base, "")
             quote = s.split("/")[1].split(":")[0]
             a = Asset(f"{base}/{quote}", s, "crypto", nm, [nm] if nm else [])
-            a.base, a.has_perp = base, base in self.perp
+            a.base, a.has_perp, a.vol_24h = base, base in self.perp, float(vols.get(base, 0) or 0)
             out.append(a)
         log.info("Crypto likuid (vol 24j >= $%s): %d aset", f"{min_vol:,.0f}", len(out))
         return out

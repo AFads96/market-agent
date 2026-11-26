@@ -73,12 +73,32 @@ analyst:
   fallback_to_rules: true               # jika Claude gagal / kredit habis / tanpa API key -> analisis berbasis aturan
   batch_size: 8
   send_low_conviction: true             # false = hanya kirim High Buy / High Sell
-  # HIGH Buy/Sell hanya jika berita kuat DAN minimal sekian indikator (RSI, MACD, MA) mengonfirmasi.
-  # 3 = ketiganya wajib searah. Jika kurang, sinyal otomatis diturunkan menjadi Low Buy/Sell.
-  min_confirmations_for_high: 3
-  # Crypto perpetual: HIGH juga wajib dikonfirmasi OI & funding (jadi 4/4).
-  require_derivatives_for_high_crypto: true
   language: id
+
+confluence:
+  # ⭐ Indikator UTAMA = leading (sering bergerak SEBELUM harga naik/turun).
+  # Volume = padanan Open Interest untuk pasar tanpa futures (saham & crypto spot).
+  key_sources:
+    stock:       [Smart money, Volume, Berita, RSI]
+    crypto_perp: [Smart money, Open Interest, Berita, RSI]
+    crypto_spot: [Smart money, Volume, Berita, RSI]
+  # Bukti uang masuk/keluar: minimal SATU dari daftar ini wajib ✅ (untuk HIGH maupun LOW).
+  money_flow_any:
+    stock:       [Smart money, Volume]
+    crypto_perp: [Smart money, Open Interest]
+    crypto_spot: [Smart money, Volume]
+  # LOW = minimal 3 indikator UTAMA ✅. MACD/MA boleh belum searah (tanda sinyal masih dini).
+  low_min_key_sources: {stock: 3, crypto_perp: 3, crypto_spot: 3}
+  low_max_key_contradictions: {stock: 1, crypto_perp: 1, crypto_spot: 1}
+  # HIGH = minimal sekian sumber ✅ (crypto perpetual punya 7 sumber, saham & spot punya 6).
+  high_min_sources: {stock: 5, crypto_perp: 6, crypto_spot: 5}
+  high_max_contradictions: 1
+  veto_sources: [Funding]               # jika ❌ (posisi terlalu ramai), sinyal dibatalkan
+
+smart_money:
+  enabled: true
+  whale_min_usd: 50000           # transaksi >= $50 ribu dihitung sebagai whale
+  whale_vol_fraction: 0.0001     # atau >= 0,01% volume 24 jam koin itu (mana yang lebih besar)
 
 alerts:
   cooldown_hours: 12                    # jangan kirim alert yang sama untuk aset yang sama dalam X jam

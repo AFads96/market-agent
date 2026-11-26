@@ -29,6 +29,10 @@ Aturan:
   * Sentimen X: mention_ratio (>2 = ramai dibicarakan) dan contoh postingan. Waspadai shilling/pump
     terkoordinasi: sentimen sangat positif dari akun kecil tanpa berita nyata bukan alasan HIGH.
   * market_context.crypto_fear_greed: kondisi pasar crypto secara umum.
+- smart_money (saham & crypto): cmf (>0 = uang masuk), obv_trend, acc_days/dist_days (hari volume besar
+  tutup dekat high/low); khusus crypto: whale_buy_usd vs whale_sell_usd (transaksi besar terbaru),
+  top_trader_ls (+ perubahan 24 jam) dan taker_buy_share_24h. Whale yang berlawanan dengan arah sinyal
+  adalah alasan kuat untuk tidak memberi HIGH.
 - Tulis dalam Bahasa Indonesia, singkat dan padat.
 
 Balas HANYA dengan JSON array, satu objek per aset:
@@ -53,6 +57,7 @@ def _payload(c: dict) -> dict:
         "technicals": c["tech"],
         "news": [{k: n.get(k) for k in ("title", "summary", "source", "age_hours", "link")} for n in c["news"]],
         **({"x_social": c["x"]} if c.get("x") else {}),
+        **({"smart_money": c["smart"]} if c.get("smart") else {}),
     }
 
 

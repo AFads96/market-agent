@@ -185,7 +185,7 @@ def analyze_one(c: dict, dcfg: dict) -> dict | None:
         "symbol": a.symbol, "conviction": conviction, "direction": direction,
         "headline": headline, "reason": reason,
         "news_potential": POTENTIAL.get(cat, POTENTIAL[(direction, "general")]),
-        "technical": technical, "key_levels": levels, "risk": "; ".join(risks).capitalize(),
+        "technical": technical, "key_levels": levels, "risk": (lambda r: r[:1].upper() + r[1:])("; ".join(risks)),
         "derivatives": deriv, "social_sentiment": xs[0] if xs else "",
         "source_link": (top or {}).get("link", "") if aligned_news > 0 else "",
         "engine": "rules",

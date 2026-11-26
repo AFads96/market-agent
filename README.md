@@ -18,39 +18,87 @@ Contoh pesan:
 
 ```
 🟢🟢 HIGH BUY
-BBCA (Saham IDX) · Rp9.450 (+3.20%)
+SOL/USDT (Crypto) · $182.40 (+4.30%)
 
-💡 Laba Q3 di atas ekspektasi, breakout dengan volume tinggi
+💡 ...
 📰 Alasan: ...
 🚀 Potensi: ...
 📊 Teknikal: ...
-🧭 Konfirmasi (3/3): ✅ RSI 64 (momentum naik) · ✅ MACD histogram positif · ✅ Harga > MA20 > MA50
-🎯 Level: Support 9.200 / Resisten 9.800 / invalid < 9.050
+🧭 Konfluensi: 7/7 sumber mendukung
+   ✅ Berita: material: "..."
+   ✅ RSI: RSI 68 (momentum naik)
+   ✅ MACD: MACD histogram positif
+   ✅ MA/Chart: Harga > MA20 > MA50
+   ✅ Open Interest: OI +15.4% / harga +4.3% → uang baru masuk ke posisi long
+   ✅ Funding: +0.010%/8j → sehat, posisi belum berlebihan
+   ✅ Smart money: akumulasi: whale beli $2.40jt vs jual $600rb dlm 20 mnt, top trader L/S 1.68 (+12% 24j), taker buy 80%, CMF +0.31
+🎯 Level: ...
 ⚠️ Risiko: ...
-🔗 Sumber berita
 ```
 
-### Label sinyal
-| Label | Artinya |
+### Label sinyal & aturan konfluensi
+Setiap sinyal diperiksa terhadap beberapa **sumber independen**. Tiap sumber diberi ✅ (mendukung),
+❌ (berlawanan), atau ➖ (netral / tidak ada data).
+
+| Sumber | Saham | Crypto perpetual | Crypto spot |
+|---|---|---|---|
+| ⭐ Berita (Claude atau kata kunci) | ✓ | ✓ | ✓ |
+| ⭐ RSI | ✓ | ✓ | ✓ |
+| MACD | ✓ | ✓ | ✓ |
+| Moving Average / chart | ✓ | ✓ | ✓ |
+| ⭐ Open Interest | | ✓ | |
+| Funding rate (veto jika terlalu ramai) | | ✓ | |
+| ⭐ Volume (lonjakan / breakout bervolume) | ✓ | | ✓ |
+| ⭐ Smart money / whale | ✓ | ✓ | ✓ |
+| Sentimen X (opsional, bonus) | | ✓ | ✓ |
+| **Total sumber** | **6** | **7** | **6** |
+
+**⭐ Indikator utama (leading)** biasanya bergerak **sebelum** harga naik/turun. MACD dan MA adalah
+indikator *lagging* (baru berubah setelah harga bergerak), jadi untuk LOW keduanya boleh belum searah.
+
+**Bukti uang masuk/keluar (wajib minimal satu ✅):** sinyal harus didukung bukti bahwa uang sungguhan
+sedang masuk atau keluar, bukan hanya berita dan RSI.
+- Crypto perpetual: **Smart money ATAU Open Interest**
+- Saham & crypto spot: **Smart money ATAU Volume**
+
+| Label | Syarat |
 |---|---|
-| 🟢🟢 **HIGH BUY** | Berita berpotensi mendorong kenaikan tajam **dan** RSI, MACD, MA ketiganya mengonfirmasi naik |
-| 🔴🔴 **HIGH SELL** | Berita berpotensi mendorong penurunan tajam **dan** RSI, MACD, MA ketiganya mengonfirmasi turun |
-| 🟢 **LOW BUY** | Ada katalis positif, tapi indikator belum semuanya searah atau berita masih rumor |
-| 🔴 **LOW SELL** | Ada katalis negatif, tapi indikator belum semuanya searah atau berita masih rumor |
+| 🟢🟢 **HIGH BUY** / 🔴🔴 **HIGH SELL** | Semua sumber kecuali satu ✅ (**6/7** crypto perpetual, **5/6** saham & spot), berita material, ada bukti uang, tidak ada ❌ di indikator utama, funding tidak berlawanan |
+| 🟢 **LOW BUY** / 🔴 **LOW SELL** | Minimal **3 dari 4 indikator utama ⭐ ✅** (paling banyak 1 berlawanan), ada bukti uang, funding tidak berlawanan |
+| *(tidak dikirim)* | Selain itu |
 
-Aturan konfirmasi indikator (dicek oleh kode, bukan tebakan AI):
-- **RSI**: Buy jika 50–75 (momentum naik, belum overbought) atau baru keluar dari oversold (<30).
-  Sell jika 25–50 atau baru turun dari overbought (>70).
-- **MACD**: Buy jika histogram positif atau terjadi bullish cross. Sell jika sebaliknya.
-- **Moving Average**: Buy jika Harga > MA20 > MA50 atau golden cross. Sell jika Harga < MA20 < MA50 atau death cross.
+Deteksi dini yang dihitung:
+- **Akumulasi diam-diam**: OBV & CMF naik padahal harga 10 hari belum bergerak (±3%).
+- **OI naik saat harga datar & funding ≤ 0**: short menumpuk, potensi short squeeze naik.
+- **RSI 40–50 yang sedang naik**: momentum mulai pulih.
+- **Breakout bervolume / lonjakan volume ≥ 2x**: uang baru masuk (saham & spot).
 
-Jika Claude menilai beritanya kuat tetapi indikatornya tidak 3/3 searah, sinyal **otomatis diturunkan**
-menjadi LOW. Syarat ini bisa dilonggarkan lewat `min_confirmations_for_high` di `config.yaml`
-(misalnya `2` = cukup 2 dari 3 indikator).
+Aturan indikator (dicek oleh kode, bukan tebakan AI):
+- **RSI**: Buy jika 50–75, baru keluar dari oversold (<30), atau 40–50 dan sedang naik (dini). Sell kebalikannya.
+- **MACD**: Buy jika histogram positif atau bullish cross. Sell jika sebaliknya.
+- **MA**: Buy jika Harga > MA20 > MA50 atau golden cross. Sell jika Harga < MA20 < MA50 atau death cross.
+- **Open Interest**: Buy jika OI naik ≥3% bersama harga naik (uang baru masuk). ❌ jika harga naik karena short ditutup.
+- **Funding**: ❌ untuk Buy jika ≥ +0,05%/8 jam (long terlalu ramai). ❌ untuk Sell jika ≤ −0,05%.
 
-> ⚠️ Ini alat bantu riset, bukan nasihat keuangan. Sinyal sentimen dan teknikal bisa salah.
+Semua ambang bisa diubah di `config.yaml` → `confluence`. Untuk menerima **HIGH saja**, set `send_low_conviction: false`.
 
----
+> Konfluensi meningkatkan kualitas sinyal, tetapi **tidak ada sinyal yang pasti benar**. Pasar bisa bergerak
+> berlawanan walaupun semua sumber searah. Selalu gunakan manajemen risiko (stop loss di level invalidasi).
+
+## Smart money / whale tracker
+**Crypto** (data gratis dari exchange, bisa diakses dari GitHub lewat OKX):
+- **Whale trades**: transaksi besar terbaru (≥ $50 ribu, atau ≥ 0,01% volume 24 jam koin itu). Total beli vs jual.
+- **Top trader long/short ratio**: posisi trader terbesar di OKX/Binance dan perubahannya dalam 24 jam.
+- **Taker flow**: persentase volume beli agresif vs jual agresif selama 24 jam.
+
+**Saham & crypto** (dari grafik harga + volume):
+- **CMF (Chaikin Money Flow)**: positif = uang cenderung masuk.
+- **OBV**: tren volume kumulatif.
+- **Hari akumulasi/distribusi**: hari bervolume besar yang ditutup dekat harga tertinggi/terendah.
+
+Smart money dianggap ✅ jika tanda beli lebih banyak dari tanda jual minimal 2 poin (untuk Buy), dan ❌ jika
+tandanya berlawanan. **Untuk saham IDX, ini adalah perkiraan dari harga & volume**, bukan data broker
+summary atau net buy asing, karena data itu tidak tersedia gratis dari server GitHub.
 
 ## Setup (±15 menit, gratis kecuali biaya API Claude)
 
@@ -105,7 +153,7 @@ Untuk penjadwalan, tambahkan ke crontab: `7 * * * * cd /path/market-agent && pyt
   misalnya "laba naik", "akuisisi", "kontrak baru", "listing", "ETF", atau "gugatan", "PKPU", "delisting", "hack",
   "unlock". Kata kunci umum (bobot 1) misalnya "menguat", "anjlok", "rally", "crash".
 - **Sentimen X** dihitung dari kata bullish/bearish di postingan (jika X diaktifkan).
-- **HIGH** hanya jika ada berita material searah **dan** indikator lolos 3/3 (saham) atau 4/4 (crypto perpetual).
+- Setelah itu sinyal tetap harus lolos **aturan konfluensi** di atas, sama seperti analisis Claude.
 - **LOW** jika ada berita searah dengan sebagian konfirmasi, atau teknikal kuat tanpa berita yang bertentangan.
 - Sisanya dilewati (tidak dikirim).
 
@@ -123,30 +171,9 @@ baik perpetual futures maupun spot. Token leverage (BTC3L, dll.), stablecoin, da
 dan memakai yang pertama bisa diakses. **Binance dan Bybit memblokir server di Amerika Serikat**,
 termasuk GitHub Actions. Di GitHub, bot biasanya otomatis jatuh ke exchange lain yang daftar koinnya
 berbeda. Jika Anda ingin daftar koin **Binance**, jalankan bot di komputer sendiri di Indonesia atau di
-VPS Singapura (lihat "Alternatif" di atas). Urutan exchange bisa diubah di `config.yaml`.
+VPS Singapura (lihat "Alternatif" di atas). Di Binance, data top trader & taker flow juga tersedia. Urutan exchange bisa diubah di `config.yaml`.
 
-Contoh pesan crypto:
-```
-🟢🟢 HIGH BUY
-PEPE/USDT (Crypto) · $2.288e-5 (+18.00%)
-
-💡 ...
-📰 Alasan: ...
-🚀 Potensi: ...
-📊 Teknikal: ...
-⛓️ Derivatif: OI naik tajam dengan funding wajar, long baru masuk
-🐦 Sentimen X: Positif, ramai dibahas setelah listing (mention 3.4x normal)
-🧭 Konfirmasi (4/4):
-   ✅ RSI 67.6 (momentum naik)
-   ✅ MACD bullish cross
-   ✅ Harga > MA20 > MA50
-   ✅ OI +15.0% · Funding +0.040% → posisi long baru masuk
-🎯 Level: ...
-⚠️ Risiko: ...
-🌡️ Fear & Greed: 71 (Greed)
-```
-
-### Open Interest & funding rate (konfirmasi ke-4 untuk crypto)
+### Open Interest & funding rate
 | Kondisi | Arti | Untuk BUY | Untuk SELL |
 |---|---|---|---|
 | Harga naik + OI naik ≥ 3% | Posisi long baru masuk | ✅ | |
@@ -156,8 +183,8 @@ PEPE/USDT (Crypto) · $2.288e-5 (+18.00%)
 | Harga turun + OI naik ≥ 3% | Posisi short baru masuk | | ✅ |
 | Funding ≥ +0,10% + harga turun | Long terlalu ramai, rawan long squeeze | | ✅ |
 
-Untuk crypto yang punya kontrak perpetual, **HIGH BUY / HIGH SELL wajib 4/4**: RSI, MACD, MA, **dan**
-derivatif. Koin yang hanya ada di spot memakai 3/3. Funding dinormalisasi ke per 8 jam untuk semua exchange.
+OI dan funding adalah 2 dari 7 sumber konfluensi untuk crypto perpetual. Funding dinormalisasi ke per 8 jam
+untuk semua exchange.
 
 ### Sentimen X (opsional, berbayar)
 X API memakai sistem bayar per pemakaian. Bot memakainya secara hemat, hanya untuk kandidat crypto teratas:
@@ -197,7 +224,8 @@ Saham dengan rata-rata transaksi di bawah Rp 5 miliar per hari otomatis diabaika
 | `universe.crypto.min_volume_usd` | volume 24 jam minimum koin |
 | `derivatives.*` | ambang funding dan OI |
 | `x_sentiment.*` | berapa kandidat yang dicek di X (memengaruhi biaya X API) |
-| `require_derivatives_for_high_crypto` | `false` = crypto cukup 3/3 indikator teknikal untuk HIGH |
+| `confluence.*` | jumlah sumber minimum untuk LOW dan batas sumber yang berlawanan |
+| `smart_money.*` | ambang transaksi whale |
 | `cooldown_hours` | jeda sebelum aset yang sama boleh di-alert lagi |
 | `volume_spike_ratio`, `big_move_pct_*` | sensitivitas screener |
 | `general_feeds` | tambahkan RSS berita favorit Anda |
