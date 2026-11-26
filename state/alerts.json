@@ -1,17 +1,1 @@
-{
- "PIEVERSE/USDT": {
-  "conviction": "low",
-  "direction": "bullish",
-  "ts": 1795710532.418388
- },
- "SEI/USDT": {
-  "conviction": "high",
-  "direction": "bullish",
-  "ts": 1795710527.3648825
- },
- "SSV/USDT": {
-  "conviction": "low",
-  "direction": "bullish",
-  "ts": 1795710530.0540876
- }
-}
+{}
