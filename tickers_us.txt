@@ -1,0 +1,8 @@
+# Saham AS, satu ticker per baris (contoh). Lengkapi sesuai kebutuhan.
+AAPL
+MSFT
+NVDA
+AMZN
+GOOGL
+META
+TSLA

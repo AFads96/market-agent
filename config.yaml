@@ -1,0 +1,78 @@
+# ============================================================
+#  Market Agent - konfigurasi
+#  Semua angka di sini bisa Anda ubah tanpa menyentuh kode.
+# ============================================================
+
+universe:
+  idx:
+    enabled: true
+    # Daftar saham IDX. Bot mencoba mengambil daftar lengkap dari situs IDX;
+    # kalau gagal (sering diblokir), memakai file ini. Isi file ini dengan
+    # SEMUA kode emiten (satu per baris) agar benar-benar semua saham terpantau.
+    tickers_file: tickers_idx.txt
+    try_fetch_from_idx: true
+    min_avg_value_idr: 5000000000      # likuiditas minimum: rata-rata nilai transaksi 20 hari (Rp 5 miliar)
+  us:
+    enabled: false                      # nyalakan jika ingin saham AS juga
+    tickers_file: tickers_us.txt
+    min_avg_value_usd: 20000000
+  crypto:
+    enabled: true
+    # exchange  = SEMUA koin yang bisa ditradingkan di exchange (spot + perpetual), plus OI & funding.
+    # coingecko = cadangan: top_n koin teratas (tanpa OI & funding).
+    source: exchange
+    # Dicoba berurutan; yang pertama bisa diakses dipakai. Binance memblokir server di AS
+    # (termasuk GitHub Actions) sehingga otomatis pindah ke exchange berikutnya.
+    exchanges: [binance, bybit, okx, kucoinfutures, gate, hyperliquid]
+    quotes: [USDT, USDC]
+    include_spot_only: true             # sertakan koin yang hanya ada di spot (tanpa OI/funding)
+    min_volume_usd: 1000000             # volume 24 jam minimum ($1 juta) agar koin "zombie" tidak ikut
+    top_n: 200                          # hanya untuk source: coingecko
+    exclude_stablecoins: true
+
+derivatives:                            # Open Interest & funding rate (crypto perpetual)
+  enabled: true
+  funding_hot: 0.0005                   # 0,05% per 8 jam = posisi mulai ramai
+  funding_extreme: 0.001                # 0,10% per 8 jam = sangat ramai (rawan squeeze)
+  oi_rise_pct: 3                        # OI naik >= 3% dalam 24 jam = uang baru masuk
+
+x_sentiment:                            # butuh X_BEARER_TOKEN (X API, bayar per pemakaian)
+  enabled: true                         # otomatis nonaktif jika token tidak di-set
+  count_candidates: 15                  # cek lonjakan mention untuk 15 kandidat crypto teratas
+  read_candidates: 5                    # baca postingan untuk 5 kandidat teratas
+  posts_per_asset: 10
+
+screener:
+  # Pemicu "ada sesuatu yang terjadi". Hanya kandidat yang lolos yang dianalisis Claude.
+  volume_spike_ratio: 2.5              # volume hari ini vs rata-rata 20 hari
+  big_move_pct_stock: 4.0
+  big_move_pct_crypto: 7.0
+  breakout_lookback: 20
+  rsi_oversold: 30
+  rsi_overbought: 72
+  max_candidates_stock: 20              # batas kandidat saham per putaran (mengontrol biaya API)
+  max_candidates_crypto: 20             # batas kandidat crypto per putaran
+
+news:
+  # Feed umum untuk menemukan aset yang sedang diberitakan.
+  general_feeds:
+    - https://www.cnbcindonesia.com/market/rss
+    - https://www.coindesk.com/arc/outboundfeeds/rss/
+    - https://cointelegraph.com/rss
+  max_age_hours: 36
+  per_asset_headlines: 6                # berita Google News per kandidat
+
+analyst:
+  model: claude-sonnet-5-5
+  batch_size: 8
+  send_low_conviction: true             # false = hanya kirim High Buy / High Sell
+  # HIGH Buy/Sell hanya jika berita kuat DAN minimal sekian indikator (RSI, MACD, MA) mengonfirmasi.
+  # 3 = ketiganya wajib searah. Jika kurang, sinyal otomatis diturunkan menjadi Low Buy/Sell.
+  min_confirmations_for_high: 3
+  # Crypto perpetual: HIGH juga wajib dikonfirmasi OI & funding (jadi 4/4).
+  require_derivatives_for_high_crypto: true
+  language: id
+
+alerts:
+  cooldown_hours: 12                    # jangan kirim alert yang sama untuk aset yang sama dalam X jam
+  max_alerts_per_run: 10
