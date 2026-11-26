@@ -4,6 +4,8 @@
 # ============================================================
 
 universe:
+  # Saham hanya dipindai Senin-Jumat pukul 08:00-17:00 WIB (hemat kuota GitHub). Hapus baris ini = selalu.
+  stock_hours_wib: [8, 17]
   idx:
     enabled: true
     # Daftar saham IDX. Bot mencoba mengambil daftar lengkap dari situs IDX;
@@ -11,6 +13,7 @@ universe:
     # SEMUA kode emiten (satu per baris) agar benar-benar semua saham terpantau.
     tickers_file: tickers_idx.txt
     try_fetch_from_idx: true
+    try_yahoo_screener: true            # cadangan: daftar semua saham bursa Jakarta dari Yahoo Finance
     min_avg_value_idr: 5000000000      # likuiditas minimum: rata-rata nilai transaksi 20 hari (Rp 5 miliar)
   us:
     enabled: false                      # nyalakan jika ingin saham AS juga

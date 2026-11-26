@@ -51,9 +51,24 @@ def load_crypto(cfg: dict):
     return assets, universe.download_prices(assets), None, {}
 
 
+def stock_market_open(cfg: dict) -> bool:
+    """Saham hanya dipindai Senin-Jumat pada jam yang diatur (WIB). Crypto selalu dipindai."""
+    from datetime import datetime, timedelta, timezone
+
+    win = cfg["universe"].get("stock_hours_wib")
+    if not win:
+        return True
+    now = datetime.now(timezone(timedelta(hours=7)))
+    return now.weekday() < 5 and win[0] <= now.hour < win[1]
+
+
 def find_candidates(cfg: dict) -> tuple[list[dict], dict]:
     scr, dcfg = cfg["screener"], cfg["derivatives"]
-    stocks = universe.stock_universe(cfg)
+    if stock_market_open(cfg):
+        stocks = universe.stock_universe(cfg)
+    else:
+        log.info("Di luar jam bursa saham (WIB); hanya memindai crypto")
+        stocks = []
     prices = universe.download_prices(stocks) if stocks else {}
     crypto, cprices, ex, funding = load_crypto(cfg)
     prices.update(cprices)

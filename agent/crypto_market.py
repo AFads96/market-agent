@@ -58,13 +58,26 @@ class CryptoExchange:
         sym_by_base = {b: self.perp.get(b) or self.spot.get(b) for b in set(self.perp) | set(self.spot)}
         vols = {}
         try:
-            tickers = self.ex.fetch_tickers()
-            for base, s in sym_by_base.items():
-                t = tickers.get(s) or tickers.get(self.spot.get(base, "")) or {}
-                qv = t.get("quoteVolume")
-                if qv is None and t.get("baseVolume") and t.get("last"):
-                    qv = t["baseVolume"] * t["last"]
-                vols[base] = qv or 0
+            tickers = {}
+            # Ambil ticker spot dan perpetual (beberapa exchange memisahkannya per tipe).
+            for kind in ("spot", "swap"):
+                try:
+                    tickers.update(self.ex.fetch_tickers(params={"type": kind}))
+                except Exception:
+                    pass
+            if not tickers:
+                tickers = self.ex.fetch_tickers()
+
+            def usd_volume(t: dict) -> float:
+                # quoteVolume di sebagian exchange (mis. OKX perpetual) berisi jumlah kontrak,
+                # jadi ambil nilai terbesar dari quoteVolume dan baseVolume x harga.
+                last = t.get("last") or t.get("close") or 0
+                cands = [t.get("quoteVolume") or 0, (t.get("baseVolume") or 0) * last]
+                return max(cands)
+
+            for base in sym_by_base:
+                vols[base] = max(usd_volume(tickers.get(s) or {})
+                                 for s in (self.perp.get(base, ""), self.spot.get(base, "")))
         except Exception as e:
             log.warning("fetch_tickers gagal (%s); filter volume dilewati", e)
         min_vol = self.cfg["min_volume_usd"]

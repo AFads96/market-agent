@@ -56,10 +56,42 @@ def _fetch_idx_list() -> list[str]:
     return []
 
 
+def _fetch_idx_from_yahoo() -> list[str]:
+    """Semua saham di bursa Jakarta (JKT) lewat screener Yahoo Finance, 250 per halaman."""
+    try:
+        import yfinance as yf
+        from yfinance import EquityQuery
+
+        q = EquityQuery("eq", ["exchange", "JKT"])
+        codes, offset = set(), 0
+        while offset < 3000:
+            res = yf.screen(q, offset=offset, size=250, sortField="intradaymarketcap", sortAsc=False)
+            quotes = res.get("quotes", []) if isinstance(res, dict) else []
+            for x in quotes:
+                s = (x.get("symbol") or "").upper()
+                if s.endswith(".JK"):
+                    codes.add(s[:-3])
+            if len(quotes) < 250:
+                break
+            offset += 250
+        if len(codes) > 300:
+            log.info("Daftar IDX dari Yahoo screener: %d emiten", len(codes))
+            return sorted(codes)
+        log.warning("Yahoo screener hanya mengembalikan %d emiten", len(codes))
+    except Exception as e:
+        log.warning("Yahoo screener gagal (%s)", str(e)[:150])
+    return []
+
+
 def idx_assets(cfg: dict) -> list[Asset]:
+    """Urutan sumber: situs IDX -> Yahoo screener -> file lokal. File lokal selalu ikut digabung."""
     codes = _fetch_idx_list() if cfg.get("try_fetch_from_idx") else []
-    if not codes:
-        codes = _read_list(cfg["tickers_file"])
+    if not codes and cfg.get("try_yahoo_screener", True):
+        codes = _fetch_idx_from_yahoo()
+    local = _read_list(cfg["tickers_file"])
+    codes = sorted(set(codes) | set(local))
+    if len(codes) == len(local):
+        log.warning("Hanya memakai daftar lokal %s (%d emiten)", cfg["tickers_file"], len(codes))
     return [Asset(c, f"{c}.JK", "idx") for c in codes]
 
 

@@ -174,11 +174,13 @@ $0,005 per postingan dibaca. Dengan pengaturan bawaan, ±$0,33 per putaran.
 Setiap 3 jam = 8 putaran per hari ≈ **$80/bulan**. Untuk menghemat, set `read_candidates: 0`
 (hanya lonjakan mention, ≈ $18/bulan), atau kurangi `count_candidates`.
 
-## Mengatur agar benar-benar SEMUA saham IDX terpantau
-Bot mencoba mengambil daftar emiten langsung dari situs IDX. Situs itu sering memblokir bot, dan
-dalam kasus itu bot memakai `tickers_idx.txt`. File bawaan hanya berisi ±60 saham likuid sebagai contoh.
-**Isi file itu dengan seluruh kode emiten** (satu per baris), misalnya dari daftar saham di idx.co.id
-yang diunduh ke Excel.
+## Daftar SEMUA saham IDX (otomatis)
+Bot mengambil daftar emiten dari situs IDX. Situs IDX memblokir server GitHub, jadi bot otomatis memakai
+**screener Yahoo Finance** (semua saham di bursa Jakarta, sekitar 900+ emiten). Isi `tickers_idx.txt` selalu ikut
+digabungkan; tambahkan kode di sana jika ada saham yang belum terpantau.
+
+Saham hanya dipindai **Senin–Jumat pukul 08:00–17:00 WIB** (`stock_hours_wib`) agar hemat kuota GitHub.
+Crypto dipindai 24 jam.
 
 Saham dengan rata-rata transaksi di bawah Rp 5 miliar per hari otomatis diabaikan
 (`min_avg_value_idr` di `config.yaml`) agar Anda tidak menerima sinyal dari saham gorengan yang tidak likuid.
