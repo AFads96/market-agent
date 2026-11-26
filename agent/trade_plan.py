@@ -5,8 +5,9 @@ Cara menghitung:
   * TP   : kandidat = level Fibonacci (retracement & extension dari swing 90 hari) + level struktur
            (MA20/MA50/MA200, high/low 20 hari, high/low swing). Dipilih bertingkat:
              TP1 = level pertama dengan Risk:Reward >= 1
-             TP2 = level berikutnya dengan R:R >= 2
-             TP3 = level berikutnya dengan R:R >= 3 (jika tidak ada: Fibonacci extension 1.618)
+             TP2, TP3 = level BERIKUTNYA secara berurutan (tidak melompati resisten/support besar
+                        seperti MA50/MA200), berjarak minimal 0,5R dari TP sebelumnya
+             Jika level tidak cukup: proyeksi kelipatan risiko (2R, 3R).
   * Entry: harga sekarang, plus area entry ideal saat pullback (berguna jika harga sudah lari jauh).
 """
 from __future__ import annotations
@@ -73,13 +74,19 @@ def build(df: pd.DataFrame, t: dict, direction: str, lookback: int = 90) -> dict
     # buang target yang tidak realistis: > 5R, atau turun > 60% / naik > 200%
     merged = [(v, n) for v, n in merged
               if rr(v) <= 5 and (-60 <= (v / p - 1) * 100 <= 200)]
+    # TP mengikuti URUTAN level yang sebenarnya (resisten/support tidak boleh dilompati):
+    #   TP1 = level pertama dengan R:R >= 1
+    #   TP2, TP3 = level berikutnya, berjarak minimal 0,5R dari TP sebelumnya
     tps, need = [], [1.0, 2.0, 3.0]
     for v, n in merged:
         if len(tps) == 3:
             break
-        if rr(v) >= need[len(tps)]:
+        if not tps:
+            if rr(v) >= 1.0:
+                tps.append((v, n))
+        elif abs(v - tps[-1][0]) >= 0.5 * risk:
             tps.append((v, n))
-    while len(tps) < 3:   # tidak ada level struktur yang cukup jauh -> pakai kelipatan risiko
+    while len(tps) < 3:   # tidak ada level struktur yang cukup -> pakai kelipatan risiko
         k = need[len(tps)] + (0.5 if tps and rr(tps[-1][0]) >= need[len(tps)] else 0)
         v = p + k * risk if bull else p - k * risk
         v = min(v, p * 3.0) if bull else max(v, p * 0.4)          # batas realistis
@@ -98,7 +105,11 @@ def build(df: pd.DataFrame, t: dict, direction: str, lookback: int = 90) -> dict
         zone = (p * (1 - 0.5 * atr) if bull else p * (1 + 0.5 * atr), "0,5x ATR")
 
     sl_pct = (sl / p - 1) * 100
+    ze = zone[0]
+    z_risk = abs(ze - sl)
+    zone_rr = [abs(v - ze) / z_risk for v, _ in tps] if z_risk and ((ze > sl) if bull else (ze < sl)) else None
     return {
+        "zone_rr": zone_rr, "zone_sl_pct": (sl / ze - 1) * 100 if zone_rr else None,
         "direction": direction, "entry": p, "entry_zone": zone, "sl": sl, "sl_pct": sl_pct,
         "tps": [{"price": v, "label": n, "pct": (v / p - 1) * 100, "rr": rr(v)} for v, n in tps],
         "fib_high": fib.get("high"), "fib_low": fib.get("low"),
@@ -125,7 +136,13 @@ def format_html(plan: dict, esc) -> list[str]:
              f"   🛑 <b>SL:</b> {_f(plan['sl'])} ({plan['sl_pct']:+.1f}%)"]
     for i, tp in enumerate(plan["tps"], 1):
         lines.append(f"   🎯 <b>TP{i}:</b> {_f(tp['price'])} ({tp['pct']:+.1f}%, R:R 1:{tp['rr']:.1f}) · {esc(tp['label'])}")
+    if plan.get("zone_rr"):
+        zr = plan["zone_rr"]
+        lines.append(f"   🔁 <b>Jika entry di {_f(z[0])}:</b> SL {plan['zone_sl_pct']:+.1f}% · R:R TP1 1:{zr[0]:.1f}"
+                     f" · TP2 1:{zr[1]:.1f} · TP3 1:{zr[2]:.1f}")
     tips = ["ambil sebagian profit di TP1 lalu geser SL ke entry (break-even)"]
+    if plan["tps"][0]["rr"] < 1.5:
+        tips.insert(0, "R:R dari harga sekarang kurang menarik, lebih baik tunggu entry ideal")
     if abs(plan["sl_pct"]) >= 12:
         tips.append(f"SL lebar ({plan['sl_pct']:+.0f}%), kecilkan ukuran posisi")
     if plan.get("size_pct_for_1pct_risk"):
