@@ -24,6 +24,26 @@
   "direction": "bearish",
   "ts": 1795705928.8249328
  },
+ "INIT/USDT": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795706652.7026978
+ },
+ "LDO/USDT": {
+  "conviction": "low",
+  "direction": "bearish",
+  "ts": 1795706655.3361197
+ },
+ "MMT/USDT": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795706653.3490236
+ },
+ "PIEVERSE/USDT": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795706654.0145874
+ },
  "SEI/USDT": {
   "conviction": "low",
   "direction": "bullish",
@@ -38,5 +58,10 @@
   "conviction": "low",
   "direction": "bearish",
   "ts": 1795705926.2815251
+ },
+ "WMT/USDT": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795706654.6526437
  }
 }
