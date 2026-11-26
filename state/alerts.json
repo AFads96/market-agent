@@ -1,1 +1,42 @@
-{}
+{
+ "ADRO": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795705926.7594082
+ },
+ "AMMN": {
+  "conviction": "low",
+  "direction": "bearish",
+  "ts": 1795705927.7192323
+ },
+ "FET/USDT": {
+  "conviction": "low",
+  "direction": "bearish",
+  "ts": 1795705928.2729495
+ },
+ "HBAR/USDT": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795705927.238292
+ },
+ "HYPE/USDT": {
+  "conviction": "low",
+  "direction": "bearish",
+  "ts": 1795705928.8249328
+ },
+ "SEI/USDT": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795705925.7680216
+ },
+ "SSV/USDT": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795705925.2735257
+ },
+ "TLKM": {
+  "conviction": "low",
+  "direction": "bearish",
+  "ts": 1795705926.2815251
+ }
+}
