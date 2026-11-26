@@ -1,1 +1,12 @@
-{}
+{
+ "SEI/USDT": {
+  "conviction": "high",
+  "direction": "bullish",
+  "ts": 1795712302.700271
+ },
+ "SSV/USDT": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795712305.5325763
+ }
+}
