@@ -63,7 +63,11 @@ news:
   per_asset_headlines: 6                # berita Google News per kandidat
 
 analyst:
-  model: claude-sonnet-5-5
+  # claude = pakai Claude (otomatis pindah ke aturan jika gagal); rules = selalu tanpa AI (gratis total)
+  provider: claude
+  # haiku = paling murah (±$0,01/putaran); ganti ke claude-sonnet-5-5 untuk analisis lebih tajam
+  model: claude-haiku-5-5
+  fallback_to_rules: true               # jika Claude gagal / kredit habis / tanpa API key -> analisis berbasis aturan
   batch_size: 8
   send_low_conviction: true             # false = hanya kirim High Buy / High Sell
   # HIGH Buy/Sell hanya jika berita kuat DAN minimal sekian indikator (RSI, MACD, MA) mengonfirmasi.

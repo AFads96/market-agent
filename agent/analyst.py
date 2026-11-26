@@ -68,22 +68,48 @@ def parse_json_array(text: str) -> list[dict]:
         return []
 
 
-def analyze(candidates: list[dict], model: str, batch_size: int = 8, context: dict | None = None) -> list[dict]:
+def _claude_batch(client, model: str, batch: list[dict], context: dict | None) -> list[dict]:
+    user = ("market_context: " + json.dumps(context or {}, ensure_ascii=False) +
+            "\n\nAnalisis aset berikut:\n" + json.dumps([_payload(c) for c in batch], ensure_ascii=False, default=str))
+    msg = client.messages.create(model=model, max_tokens=4000, system=SYSTEM,
+                                 messages=[{"role": "user", "content": user}])
+    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
+    out = parse_json_array(text)
+    if not out and text.strip():
+        raise ValueError("jawaban Claude tidak bisa dibaca sebagai JSON")
+    for o in out:
+        o["engine"] = "claude"
+    return out
+
+
+def analyze(candidates: list[dict], acfg: dict, dcfg: dict, context: dict | None = None) -> list[dict]:
+    """Pakai Claude bila tersedia; jika tidak (tanpa API key, kredit habis, error), otomatis pakai aturan."""
+    import os
+
+    from . import rules_analyst
+
+    use_claude = acfg.get("provider", "claude") == "claude" and bool(os.environ.get("ANTHROPIC_API_KEY"))
+    fallback = acfg.get("fallback_to_rules", True)
+    if not use_claude:
+        log.info("Analisis: mode ATURAN (tanpa AI)")
+        return rules_analyst.analyze(candidates, dcfg)
+
     import anthropic
 
     client = anthropic.Anthropic()
-    results = []
-    for i in range(0, len(candidates), batch_size):
-        batch = candidates[i : i + batch_size]
-        user = ("market_context: " + json.dumps(context or {}, ensure_ascii=False) +
-                "\n\nAnalisis aset berikut:\n" + json.dumps([_payload(c) for c in batch], ensure_ascii=False, default=str))
-        try:
-            msg = client.messages.create(
-                model=model, max_tokens=4000, system=SYSTEM,
-                messages=[{"role": "user", "content": user}],
-            )
-            text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
-            results += parse_json_array(text)
-        except Exception as e:
-            log.error("Panggilan Claude gagal untuk batch %d: %s", i // batch_size, e)
+    results, bs = [], acfg.get("batch_size", 8)
+    for i in range(0, len(candidates), bs):
+        batch = candidates[i : i + bs]
+        if use_claude:
+            try:
+                results += _claude_batch(client, acfg["model"], batch, context)
+                continue
+            except Exception as e:
+                log.warning("Claude gagal (%s). %s", str(e)[:200],
+                            "Beralih ke mode ATURAN untuk sisa putaran ini." if fallback else "Batch dilewati.")
+                use_claude = False
+        if fallback:
+            results += rules_analyst.analyze(batch, dcfg)
+    log.info("Analisis selesai: %d sinyal (claude %d, aturan %d)", len(results),
+             sum(r.get("engine") == "claude" for r in results), sum(r.get("engine") == "rules" for r in results))
     return results

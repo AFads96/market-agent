@@ -188,7 +188,7 @@ def main():
         return
 
     acfg, alcfg = cfg["analyst"], cfg["alerts"]
-    signals = analyst.analyze(cands, acfg["model"], acfg["batch_size"], context)
+    signals = analyst.analyze(cands, acfg, cfg["derivatives"], context)
     by_sym = {c["asset"].symbol: c for c in cands}
     apply_confirmation(signals, by_sym, cfg)
 

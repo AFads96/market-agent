@@ -59,7 +59,8 @@ def format_message(sig: dict, cand: dict, context: dict | None = None) -> str:
     link = sig.get("source_link")
     if link and str(link).startswith("http"):
         lines.append(f'🔗 <a href="{html.escape(link, quote=True)}">Sumber berita</a>')
-    lines += ["", "<i>Bukan nasihat keuangan. Lakukan riset sendiri.</i>"]
+    engine = "🤖 Analisis: Claude AI" if sig.get("engine") == "claude" else "📐 Analisis: aturan otomatis (tanpa AI)"
+    lines += ["", f"<i>{engine}</i>", "<i>Bukan nasihat keuangan. Lakukan riset sendiri.</i>"]
     return "\n".join(lines)
 
 

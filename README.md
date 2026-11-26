@@ -9,7 +9,9 @@ Bot ini berjalan otomatis (bawaan: setiap 3 jam):
 3. **Mengumpulkan data pendukung** untuk kandidat teratas (20 saham + 20 crypto):
    berita (RSS + Google News), dan untuk crypto: **Open Interest**, **funding rate**,
    **sentimen X** (lonjakan mention + isi postingan), serta **Fear & Greed Index**.
-4. **Claude menganalisis**: menggabungkan berita dan teknikal, lalu memberi label **HIGH**, **LOW**, atau *skip*.
+4. **Analisis**: Claude (Haiku, murah) menggabungkan berita dan teknikal, lalu memberi label **HIGH**, **LOW**, atau *skip*.
+   **Jika Claude tidak tersedia** (tanpa API key, kredit habis, atau error), bot **otomatis** memakai analisis
+   berbasis aturan yang gratis, jadi sinyal tetap terkirim.
 5. **Mengirim ke Telegram** hanya yang layak, tanpa spam (ada cooldown per aset).
 
 Contoh pesan:
@@ -61,13 +63,15 @@ menjadi LOW. Syarat ini bisa dilonggarkan lewat `min_confirmations_for_high` di 
    TELEGRAM_BOT_TOKEN=token_anda python get_chat_id.py
    ```
 
-### 2. Ambil API key Claude
-Buat di https://console.anthropic.com → API Keys. Isi saldo secukupnya.
+### 2. Ambil API key Claude *(opsional)*
+Buat di https://console.anthropic.com → API Keys. Akun baru mendapat kredit gratis untuk mencoba.
+Bot memakai **Claude Haiku 5.5** (±$0,01 per putaran). Jika Anda tidak ingin memakai Claude sama sekali,
+lewati langkah ini: bot otomatis berjalan dengan analisis berbasis aturan yang gratis.
 
 ### 3. Jalankan otomatis di GitHub Actions (disarankan)
 1. Buat repository **private** baru di GitHub, lalu upload semua isi folder ini.
 2. Buka **Settings → Secrets and variables → Actions → New repository secret**, lalu tambahkan:
-   - `ANTHROPIC_API_KEY`
+   - `ANTHROPIC_API_KEY` *(opsional; tanpa ini bot memakai mode aturan gratis)*
    - `TELEGRAM_BOT_TOKEN`
    - `TELEGRAM_CHAT_ID`
    - `X_BEARER_TOKEN` *(opsional, untuk sentimen X)*
@@ -86,6 +90,27 @@ python run.py              # kirim ke Telegram
 Untuk penjadwalan, tambahkan ke crontab: `7 * * * * cd /path/market-agent && python run.py`
 
 ---
+
+## Mode gratis & cadangan otomatis
+
+| Kondisi | Yang terjadi | Label di pesan |
+|---|---|---|
+| `ANTHROPIC_API_KEY` ada dan kredit cukup | Claude menganalisis | 🤖 Analisis: Claude AI |
+| Kredit habis / API error di tengah putaran | Sisa putaran otomatis pakai aturan | 📐 Analisis: aturan otomatis |
+| `ANTHROPIC_API_KEY` tidak di-set | Selalu pakai aturan (gratis total) | 📐 Analisis: aturan otomatis |
+| `provider: rules` di `config.yaml` | Selalu pakai aturan, walau ada API key | 📐 Analisis: aturan otomatis |
+
+**Cara kerja analisis berbasis aturan:**
+- **Sentimen berita** dihitung dari kata kunci bahasa Indonesia dan Inggris. Kata kunci *material* (bobot 3)
+  misalnya "laba naik", "akuisisi", "kontrak baru", "listing", "ETF", atau "gugatan", "PKPU", "delisting", "hack",
+  "unlock". Kata kunci umum (bobot 1) misalnya "menguat", "anjlok", "rally", "crash".
+- **Sentimen X** dihitung dari kata bullish/bearish di postingan (jika X diaktifkan).
+- **HIGH** hanya jika ada berita material searah **dan** indikator lolos 3/3 (saham) atau 4/4 (crypto perpetual).
+- **LOW** jika ada berita searah dengan sebagian konfirmasi, atau teknikal kuat tanpa berita yang bertentangan.
+- Sisanya dilewati (tidak dikirim).
+
+Keterbatasannya: aturan tidak memahami konteks seperti AI. Misalnya, aturan tidak bisa menilai apakah berita
+sudah "priced in" atau masih rumor. Selalu cek sumber beritanya.
 
 ## Crypto: semua koin, Open Interest, funding rate, dan sentimen X
 
@@ -161,6 +186,8 @@ Saham dengan rata-rata transaksi di bawah Rp 5 miliar per hari otomatis diabaika
 ## Pengaturan penting (`config.yaml`)
 | Setting | Fungsi |
 |---|---|
+| `provider` | `claude` (pakai Claude, cadangan aturan) atau `rules` (selalu tanpa AI) |
+| `model` | `claude-haiku-5-5` (murah) atau `claude-sonnet-5-5` (lebih tajam) |
 | `send_low_conviction` | `false` = hanya kirim HIGH BUY / HIGH SELL |
 | `min_confirmations_for_high` | jumlah indikator (dari RSI, MACD, MA) yang wajib searah untuk label HIGH |
 | `max_candidates_stock` / `_crypto` | jumlah aset yang dianalisis Claude per putaran (memengaruhi biaya) |
