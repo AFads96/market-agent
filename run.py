@@ -136,6 +136,7 @@ def find_candidates(cfg: dict) -> tuple[list[dict], dict]:
         if a.is_crypto and ex and smcfg["enabled"]:
             sm.update(smart_money.exchange_flow(ex, a, smcfg))
         c["smart"] = sm
+        c["df"] = prices.get(a.yf_symbol)
     log.info("Data smart money: %d kandidat (whale trades: %d)", sum(bool(c["smart"]) for c in cands),
              sum("whale_count" in c["smart"] for c in cands))
 
@@ -160,6 +161,27 @@ def find_candidates(cfg: dict) -> tuple[list[dict], dict]:
         if ex:
             context["crypto_exchange"] = ex.name
     return cands, context
+
+
+def make_chart(s: dict, cand: dict, cfg: dict) -> bytes | None:
+    if not cfg.get("charts", {}).get("enabled", True) or cand.get("df") is None:
+        return None
+    try:
+        from agent import chart
+
+        t, a = cand["tech"], cand["asset"]
+        label = f"{s['conviction'].upper()} {'BUY' if s['direction'] == 'bullish' else 'SELL'}"
+        cf = s.get("confluence") or {}
+        sub = (f"RSI {t.get('rsi14')} · tren {t.get('trend')} · volume {t.get('volume_ratio')}x · "
+               f"konfluensi {cf.get('ok', 0)}/{cf.get('total', 0)} · utama {cf.get('key_ok', 0)}/{cf.get('key_total', 0)}")
+        if a.is_crypto and t.get("funding") is not None:
+            sub += f" · funding {t['funding'] * 100:+.3f}%"
+        return chart.render(cand["df"], f"{a.symbol} · {label}", sub,
+                            {"support": t.get("support"), "resistance": t.get("resistance")},
+                            bars=cfg.get("charts", {}).get("bars", 120))
+    except Exception as e:
+        log.warning("Gagal membuat chart %s: %s", s["symbol"], e)
+        return None
 
 
 def main():
@@ -207,12 +229,21 @@ def main():
         if not state.should_send(s["symbol"], s["direction"], s["conviction"], alcfg["cooldown_hours"]):
             log.info("TERTAHAN cooldown: %s %s (%s)", s["symbol"], label, state.why_blocked(s["symbol"]))
             continue
-        msg = notifier.format_message(s, by_sym[s["symbol"]], context)
+        cand = by_sym[s["symbol"]]
+        msg = notifier.format_message(s, cand, context)
+        png = make_chart(s, cand, cfg)
         if args.dry_run:
             print(msg, "\n" + "-" * 40)
+            if png:
+                import os
+                os.makedirs("charts", exist_ok=True)
+                path = f"charts/{s['symbol'].replace('/', '_')}.png"
+                open(path, "wb").write(png)
+                log.info("Chart disimpan: %s", path)
             ok = True
         else:
-            ok = notifier.send_telegram(msg)
+            photo_id = notifier.send_telegram_photo(png, notifier.photo_caption(s, cand)) if png else None
+            ok = notifier.send_telegram(msg, reply_to=photo_id)   # tanpa chart pun analisis tetap terkirim
         log.info("%s: %s %s", "DIKIRIM" if ok else "GAGAL KIRIM", s["symbol"], label)
         if ok:
             sent += 1

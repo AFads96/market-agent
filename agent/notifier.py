@@ -60,16 +60,47 @@ def format_message(sig: dict, cand: dict, context: dict | None = None) -> str:
     return "\n".join(lines)
 
 
-def send_telegram(text: str) -> bool:
+def _creds():
     token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chat:
         log.error("TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID belum di-set")
+    return token, chat
+
+
+def send_telegram(text: str, reply_to: int | None = None) -> bool:
+    token, chat = _creds()
+    if not token or not chat:
         return False
-    r = requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        json={"chat_id": chat, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True},
-        timeout=20,
-    )
+    payload = {"chat_id": chat, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
+    if reply_to:
+        payload["reply_parameters"] = {"message_id": reply_to, "allow_sending_without_reply": True}
+    r = requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json=payload, timeout=20)
     if not r.ok:
         log.error("Telegram error %s: %s", r.status_code, r.text[:200])
     return r.ok
+
+
+def send_telegram_photo(png: bytes, caption: str) -> int | None:
+    """Kirim gambar chart. Mengembalikan message_id (untuk dibalas dengan analisis lengkap)."""
+    token, chat = _creds()
+    if not token or not chat:
+        return None
+    r = requests.post(f"https://api.telegram.org/bot{token}/sendPhoto",
+                      data={"chat_id": chat, "caption": caption[:1000], "parse_mode": "HTML"},
+                      files={"photo": ("chart.png", png, "image/png")}, timeout=60)
+    if not r.ok:
+        log.error("Telegram foto error %s: %s", r.status_code, r.text[:200])
+        return None
+    return r.json().get("result", {}).get("message_id")
+
+
+def photo_caption(sig: dict, cand: dict) -> str:
+    a, t = cand["asset"], cand["tech"]
+    high = sig["conviction"] == "high"
+    bull = sig.get("direction") == "bullish"
+    icon = ("🟢🟢" if high else "🟢") if bull else ("🔴🔴" if high else "🔴")
+    action = f"{'HIGH' if high else 'LOW'} {'BUY' if bull else 'SELL'}"
+    cf = sig.get("confluence") or {}
+    return (f"{icon} <b>{action}</b> · <b>{html.escape(a.symbol)}</b> · {_fmt_price(t.get('price'), a.market)} "
+            f"({(t.get('change_pct') or 0):+.2f}%)\n🧭 Konfluensi {cf.get('ok', 0)}/{cf.get('total', 0)} · "
+            f"⭐ utama {cf.get('key_ok', 0)}/{cf.get('key_total', 0)}\n⬇️ Analisis lengkap di bawah")

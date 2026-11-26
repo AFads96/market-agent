@@ -36,6 +36,15 @@ SOL/USDT (Crypto) · $182.40 (+4.30%)
 ⚠️ Risiko: ...
 ```
 
+### Chart otomatis
+Setiap sinyal dikirim dengan **gambar chart harian** (120 candle terakhir), berisi:
+- Candlestick, **MA20 / MA50 / MA200**, garis **support & resisten**, dan harga terakhir
+- Panel **Volume** (dengan rata-rata 20 hari), **RSI** (garis 30/50/70), dan **MACD**
+
+Di Telegram, chart dikirim lebih dulu sebagai foto dengan ringkasan singkat. Analisis lengkap dikirim
+sebagai **balasan** di bawah foto tersebut. Jika chart gagal dibuat, analisis teks tetap terkirim.
+Matikan dengan `charts: enabled: false` di `config.yaml`. Saat `--dry-run`, chart disimpan ke folder `charts/`.
+
 ### Label sinyal & aturan konfluensi
 Setiap sinyal diperiksa terhadap beberapa **sumber independen**. Tiap sumber diberi ✅ (mendukung),
 ❌ (berlawanan), atau ➖ (netral / tidak ada data).
@@ -216,6 +225,7 @@ Saham dengan rata-rata transaksi di bawah Rp 5 miliar per hari otomatis diabaika
 | Setting | Fungsi |
 |---|---|
 | `provider` | `claude` (pakai Claude, cadangan aturan) atau `rules` (selalu tanpa AI) |
+| `charts.enabled` / `charts.bars` | kirim gambar chart & jumlah candle yang ditampilkan |
 | `model` | `claude-haiku-5-5` (murah) atau `claude-sonnet-5-5` (lebih tajam) |
 | `send_low_conviction` | `false` = hanya kirim HIGH BUY / HIGH SELL |
 | `min_confirmations_for_high` | jumlah indikator (dari RSI, MACD, MA) yang wajib searah untuk label HIGH |
@@ -230,6 +240,7 @@ Saham dengan rata-rata transaksi di bawah Rp 5 miliar per hari otomatis diabaika
 | `volume_spike_ratio`, `big_move_pct_*` | sensitivitas screener |
 | `general_feeds` | tambahkan RSS berita favorit Anda |
 | `universe.us.enabled` | nyalakan untuk saham AS |
+| `charts.enabled` / `charts.bars` | kirim gambar chart & jumlah candle yang ditampilkan |
 | `model` | model Claude yang dipakai |
 
 ## Biaya

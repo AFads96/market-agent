@@ -100,6 +100,10 @@ smart_money:
   whale_min_usd: 50000           # transaksi >= $50 ribu dihitung sebagai whale
   whale_vol_fraction: 0.0001     # atau >= 0,01% volume 24 jam koin itu (mana yang lebih besar)
 
+charts:
+  enabled: true                 # kirim gambar chart (candlestick, MA, RSI, volume, MACD) bersama sinyal
+  bars: 120                     # jumlah candle harian yang ditampilkan
+
 alerts:
   cooldown_hours: 12                    # jangan kirim alert yang sama untuk aset yang sama dalam X jam
   max_alerts_per_run: 10
