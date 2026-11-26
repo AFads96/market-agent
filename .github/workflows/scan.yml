@@ -2,7 +2,7 @@ name: market-agent
 
 on:
   schedule:
-    - cron: "7 */3 * * *"
+    - cron: "7 * * * *"
   workflow_dispatch: {}
 
 permissions:
