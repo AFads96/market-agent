@@ -1,4 +1,14 @@
 {
+ "CYBR": {
+  "conviction": "low",
+  "direction": "bullish",
+  "ts": 1795743622.278618
+ },
+ "GULA": {
+  "conviction": "high",
+  "direction": "bullish",
+  "ts": 1795743618.9783921
+ },
  "SEI/USDT": {
   "conviction": "high",
   "direction": "bullish",
