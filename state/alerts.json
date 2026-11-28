@@ -28,5 +28,10 @@
   "conviction": "low",
   "direction": "bullish",
   "ts": 1795776301.3094065
+ },
+ "WLFI/USDT": {
+  "conviction": "low",
+  "direction": "bearish",
+  "ts": 1795865641.4942555
  }
 }
