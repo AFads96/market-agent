@@ -1,4 +1,9 @@
 {
+ "AAVE/USDT": {
+  "conviction": "low",
+  "direction": "bearish",
+  "ts": 1795833377.6034863
+ },
  "CYBR": {
   "conviction": "low",
   "direction": "bullish",
